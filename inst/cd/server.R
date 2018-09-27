@@ -16,6 +16,7 @@ library("linkcomm")
 library('igraph')
 library("shinyBS")
 library("HydeNet")
+library("leaflet")
 source('error.bar.R')
 source('graph.custom.R')
 source('custom.Modules.R')
@@ -44,6 +45,14 @@ shinyServer(function(input, output,session) {
   reset<-2
   exactCheck<-1
   #Initialization
+
+  plotValue <<- reactiveValues(probs = NULL)
+  
+  #Load Map
+  
+  states <- readRDS("states.rds")
+
+
   rvs <<- reactiveValues(evidence = list(),values = list(),evidenceObserve = list(),valueObserve = list())
   insertedV <- c()
   inserted <- c()
@@ -214,6 +223,7 @@ shinyServer(function(input, output,session) {
           probs = prop.table(table(cpdist(bn.hc.boot.fit,input$event,evidence = eval(parse(text = str1)))))[1:input$NumBar]
         }
         output$distPlot = renderPlot({par(mar=c(5,3,3,3))
+          plotValue$probs <<- probs
           par(oma=c(5,3,3,3))
           barx<<-barplot(probs,
                          col = "lightblue",
@@ -262,7 +272,7 @@ shinyServer(function(input, output,session) {
             if(exactCheck==2)
             {
               evidenceV = setEvidence(bn.jtree, evidence=eval(parse(text = str3)))
-              probs = ((querygrain(evidenceV,nodes=input$event))[[input$event]])
+              probs = ((querygrain(evidenceV,nodes=input$event))[[input$event]])[1:input$NumBar]
             }
             else
             {
@@ -271,7 +281,7 @@ shinyServer(function(input, output,session) {
           }
           else
           {
-            probs = prop.table(table(cpdist(bn.hc.boot.fit,input$event,evidence = eval(parse(text = str1)))))
+            probs = prop.table(table(cpdist(bn.hc.boot.fit,input$event,evidence = eval(parse(text = str1)))))[1:input$NumBar]
           }
           probT = rbind(probT,probs)
         }
@@ -279,6 +289,8 @@ shinyServer(function(input, output,session) {
         ee$mean = colMeans(probT)
         ee$sd = apply(probT, 2, sd)
         output$distPlot = renderPlot({par(mar=c(5,3,3,3))
+
+          plotValue$probs <<- data.frame(names(ee$mean), ee$mean)
           par(oma=c(5,3,3,3))
           barx <<-barplot(ee$mean[1:input$NumBar],
                           col = "lightblue",
@@ -339,6 +351,7 @@ shinyServer(function(input, output,session) {
             probs = sort(prop.table(table(cpdist(bn.hc.boot.fit,input$event,evidence = eval(parse(text = str1))))),decreasing = T)[1:input$NumBar]
           }
           output$distPlot = renderPlot({par(mar=c(5,3,3,3))
+            plotValue$probs <<- probs
             par(oma=c(5,3,3,3))
             barx<<-barplot(probs,
                            col = "lightblue",
@@ -386,7 +399,7 @@ shinyServer(function(input, output,session) {
               if(exactCheck==2)
               {
                 evidenceV = setEvidence(bn.jtree, evidence=eval(parse(text = str3)))
-                probs = ((querygrain(evidenceV,nodes=input$event))[[input$event]])
+                probs = sort(((querygrain(evidenceV,nodes=input$event))[[input$event]]), decreasing = T)[1:input$NumBar]
               }
               else
               {
@@ -395,7 +408,7 @@ shinyServer(function(input, output,session) {
             }
             else
             {
-              probs = prop.table(table(cpdist(bn.hc.boot.fit,input$event,evidence = eval(parse(text = str1)))))
+              probs = sort(prop.table(table(cpdist(bn.hc.boot.fit,input$event,evidence = eval(parse(text = str1))))), decreasing = T)[1:input$NumBar]
             }
             probT = rbind(probT,probs)
           }
@@ -404,6 +417,7 @@ shinyServer(function(input, output,session) {
           ee$sd = apply(probT, 2, sd)
           nm = names(sort(ee$mean,decreasing = T))[1:input$NumBar]
           output$distPlot = renderPlot({par(mar=c(5,3,3,3))
+            plotValue$probs <<- data.frame(names(ee$mean), ee$mean)
             par(oma=c(5,3,3,3))
             barx <<-barplot(ee$mean[nm],
                             col = "lightblue",
@@ -816,4 +830,89 @@ shinyServer(function(input, output,session) {
       })
     })
   })
+
+  labels <- sprintf(
+    "<strong>%s</strong><br/>",
+    states$NAME_1
+  ) %>% lapply(htmltools::HTML)
+
+
+  pal <- colorBin(topo.colors(20), domain = as.numeric(factor(states$NAME_1)), bins = length(unique(states$NAME_1)))
+
+   output$myPlot2 <- renderLeaflet(leaflet(states) %>%
+                                     setView(lat = 45.68, lng = -112.47, zoom = 3) %>% 
+                                    addPolygons(fillColor = pal(as.numeric(factor(states$NAME_1))), fillOpacity = 0.7, layerId = states$NAME_1, dashArray = "3", weight = 2, color = "white", highlight = highlightOptions(
+                                      weight = 4, color = "#666", dashArray = "", bringToFront = TRUE), label = labels, labelOptions = labelOptions(
+                                        style = list("font-weight" = "normal", padding = "3px 8px"), textsize = "15px", direction = "auto")) %>%
+                                    addLegend(colors = pal(as.numeric(factor(states$NAME_1))), labels = states$NAME_1, title = "States", position = "topright"))
+
+
+   observeEvent(plotValue$probs, {
+     foo <- plotValue$probs
+     foo <- data.frame(foo)
+     colnames(foo) <- c("Var1", "Freq")
+     foo$Var1 <- as.character(foo$Var1)
+     foo$Freq <- as.numeric(foo$Freq)
+     foo$Freq[which(foo$Freq == 0)] <- NA
+     if(input$event == "statename"){
+       colnames(foo) <- c("NAME_1", "Freq")
+       state_map <- merge(states, foo, by = "NAME_1")
+       
+       #Label for plotValue map states
+       
+       labels2 <- sprintf(
+         "<strong>%s</strong><br/>%g",
+         state_map$NAME_1, state_map$Freq
+       ) %>% lapply(htmltools::HTML)
+       
+       pal <- colorBin("YlOrRd", domain = state_map$Freq, bins = length(state_map$Freq)/8)
+       
+       #Redrawn Map Plot
+       
+       leafletProxy("myPlot2") %>%
+         clearControls() %>%
+         clearShapes() %>%
+         addPolygons(data = state_map, fillColor = pal(state_map$Freq), fillOpacity = 0.7, layerId = state_map$NAME_1, dashArray = "3", weight = 2, color = "white", highlight = highlightOptions(
+           weight = 4, color = "#666", dashArray = "", bringToFront = TRUE), label = labels2, labelOptions = labelOptions(
+             style = list("font-weight" = "normal", padding = "3px 8px"), textsize = "15px", direction = "auto")) %>%
+         addLegend(pal = pal, values = state_map$Freq, labels = state_map$Freq, title = substr(str2,1,(nchar(str2)-2)), position = "topright")
+     }
+  
+   })
+
+    observeEvent(input$myPlot2_shape_click,{
+     tryCatch({
+       btn <<- btn + 1
+       id <- paste0('Evidence', btn)
+       idL <- paste("Evidence", btn)
+       idV <- paste0('Value', btn)
+       idVL <- paste("Value", btn)
+       insertUI(selector = '#placeholder1',
+                ui = tags$div(selectInput(id,'Evidence',nodeNames,selected = "statename"),
+                              id = id
+                )
+       )
+       insertUI(selector = '#placeholder2',
+                ui = tags$div(selectInput(idV,'Value',levels(DiscreteData[,"statename"])),
+                              id = idV
+                )
+       )
+       inserted <<- c(id, inserted)
+       insertedV <<- c(idV,insertedV)
+       rvs$evidence <<- c(rvs$evidence,id)
+       rvs$value <<- c(rvs$value,id)
+       rvs$evidenceObserve <<- c(rvs$evidenceObserve,observeEvent(input[[id]],{
+         tryCatch({
+           valID = insertedV[which(inserted == id)]
+           updateSelectInput(session,valID, choices = levels(DiscreteData[,input[[id]]]), selected = input$myPlot2_shape_click$id)
+         },error = function(e){
+           shinyalert(toString("Construct bayesian network for taking decisions"), type = "error")
+         })
+       }))
+       
+     },error = function(e){
+       shinyalert(toString(e), type = "error")
+     })
+   })
+
 })

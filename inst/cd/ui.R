@@ -16,6 +16,7 @@ library("linkcomm")
 library('igraph')
 library("shinyBS")
 library("HydeNet")
+library("leaflet")
 source('error.bar.R')
 source('graph.custom.R')
 source('custom.Modules.R')
@@ -197,7 +198,7 @@ dashboardPage(skin = "blue",
                                                                             "input.decisionOption=='Decision Network'",
                                                                             shiny::fluidRow(
                                                                               shiny::column(2,dropdownButton(
-                                                                                shiny::fluidRow(shiny::column(6,selectInput("parents",label = "Create payoff Node For:",choices = "",multiple = F))),
+                                                                                shiny::fluidRow(shiny::column(6,selectInput("parents",selected = "", label = "Create payoff Node For:",choices = "",multiple = F))),
                                                                                 shiny::fluidRow(shiny::column(10,rHandsontableOutput("payoff"))),
                                                                                 br(),
                                                                                 shiny::fluidRow(shiny::column(6,actionButton("buildDecisionNet2",'build decision net', class = "butt"))),
@@ -215,7 +216,8 @@ dashboardPage(skin = "blue",
                                                                             "input.decisionOption=='Policy Table'",
                                                                             shinycssloaders::withSpinner(DT::dataTableOutput("policyPlot",height = "150px"),color="#2E86C1")
                                                                           )
-                                                                 )
+                                                                 ),
+                                                                 tabPanel("States", fluidPage(shiny::fluidRow(shiny::column(12, leafletOutput("myPlot2", height = 1000)))))
                                                                  )
 
 
