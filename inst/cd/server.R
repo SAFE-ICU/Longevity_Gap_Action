@@ -47,9 +47,9 @@ shinyServer(function(input, output,session) {
   #Initialization
 
   plotValue <<- reactiveValues(probs = NULL)
-  
+
   #Load Map
-  
+
   states <- readRDS("states.rds")
 
 
@@ -840,7 +840,7 @@ shinyServer(function(input, output,session) {
   pal <- colorBin(topo.colors(20), domain = as.numeric(factor(states$NAME_1)), bins = length(unique(states$NAME_1)))
 
    output$myPlot2 <- renderLeaflet(leaflet(states) %>%
-                                     setView(lat = 45.68, lng = -112.47, zoom = 3) %>% 
+                                     setView(lat = 45.68, lng = -112.47, zoom = 3) %>%
                                     addPolygons(fillColor = pal(as.numeric(factor(states$NAME_1))), fillOpacity = 0.7, layerId = states$NAME_1, dashArray = "3", weight = 2, color = "white", highlight = highlightOptions(
                                       weight = 4, color = "#666", dashArray = "", bringToFront = TRUE), label = labels, labelOptions = labelOptions(
                                         style = list("font-weight" = "normal", padding = "3px 8px"), textsize = "15px", direction = "auto")) %>%
@@ -848,8 +848,8 @@ shinyServer(function(input, output,session) {
 
 
    observeEvent(plotValue$probs, {
-     foo <- plotValue$probs
-     foo <- data.frame(foo)
+     foo <- data.frame(names(plotValue$probs),plotValue$probs)
+     print(foo)
      colnames(foo) <- c("Var1", "Freq")
      foo$Var1 <- as.character(foo$Var1)
      foo$Freq <- as.numeric(foo$Freq)
@@ -857,18 +857,18 @@ shinyServer(function(input, output,session) {
      if(input$event == "statename"){
        colnames(foo) <- c("NAME_1", "Freq")
        state_map <- merge(states, foo, by = "NAME_1")
-       
+
        #Label for plotValue map states
-       
+
        labels2 <- sprintf(
          "<strong>%s</strong><br/>%g",
          state_map$NAME_1, state_map$Freq
        ) %>% lapply(htmltools::HTML)
-       
+
        pal <- colorBin("YlOrRd", domain = state_map$Freq, bins = length(state_map$Freq)/8)
-       
+
        #Redrawn Map Plot
-       
+
        leafletProxy("myPlot2") %>%
          clearControls() %>%
          clearShapes() %>%
@@ -877,7 +877,7 @@ shinyServer(function(input, output,session) {
              style = list("font-weight" = "normal", padding = "3px 8px"), textsize = "15px", direction = "auto")) %>%
          addLegend(pal = pal, values = state_map$Freq, labels = state_map$Freq, title = substr(str2,1,(nchar(str2)-2)), position = "topright")
      }
-  
+
    })
 
     observeEvent(input$myPlot2_shape_click,{
@@ -909,7 +909,7 @@ shinyServer(function(input, output,session) {
            shinyalert(toString("Construct bayesian network for taking decisions"), type = "error")
          })
        }))
-       
+
      },error = function(e){
        shinyalert(toString(e), type = "error")
      })
