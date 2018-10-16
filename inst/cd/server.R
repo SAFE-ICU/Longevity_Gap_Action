@@ -222,6 +222,7 @@ shinyServer(function(input, output,session) {
         {
           probs = prop.table(table(cpdist(bn.hc.boot.fit,input$event,evidence = eval(parse(text = str1)))))[1:input$NumBar]
         }
+        print(probs)
         output$distPlot = renderPlot({par(mar=c(5,3,3,3))
           plotValue$probs <<- probs
           par(oma=c(5,3,3,3))
