@@ -222,7 +222,6 @@ shinyServer(function(input, output,session) {
         {
           probs = prop.table(table(cpdist(bn.hc.boot.fit,input$event,evidence = eval(parse(text = str1)))))[1:input$NumBar]
         }
-        print(probs)
         output$distPlot = renderPlot({par(mar=c(5,3,3,3))
           plotValue$probs <<- probs
           par(oma=c(5,3,3,3))
@@ -850,11 +849,11 @@ shinyServer(function(input, output,session) {
 
    observeEvent(plotValue$probs, {
      foo <- data.frame(names(plotValue$probs),plotValue$probs)
-     print(foo)
+     if(length(foo) > 2){foo <- foo[,(ncol(foo)-1):ncol(foo)]}
      colnames(foo) <- c("Var1", "Freq")
      foo$Var1 <- as.character(foo$Var1)
      foo$Freq <- as.numeric(foo$Freq)
-     foo$Freq[which(foo$Freq == 0)] <- NA
+     foo$Freq[foo$Freq == 0] = NA
      if(input$event == "statename"){
        colnames(foo) <- c("NAME_1", "Freq")
        state_map <- merge(states, foo, by = "NAME_1")
