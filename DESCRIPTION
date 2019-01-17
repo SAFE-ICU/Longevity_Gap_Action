@@ -1,10 +1,10 @@
 Package: customDashboard
 Type: Package
-Title: An R package
+Title: Longevity Gap Action
 Version: 0.1.0
-Author: John Doe
-Maintainer: The package maintainer <JohnDoe@mail.com>
-Contact: John Doe<JohnDoe@mail.com> 
+Author: Tavpritesh Sethi, Anant Mittal, Shubham Maheshwari, Samarth Chugh
+Maintainer: Shubham Maheshwari, Samarth Chugh <shubham14101@iiitd.ac.in, c.samarth98@gmail.com>
+Contact: Tavpritesh Sethi <tavpriteshsethi@iiitd.ac.in>
 Description: An R package
 biocViews:
 Depends: R (>= 3.5.0)
