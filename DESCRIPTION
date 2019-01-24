@@ -3,7 +3,7 @@ Type: Package
 Title: Longevity Gap Action
 Version: 0.1.0
 Author: Tavpritesh Sethi, Anant Mittal, Shubham Maheshwari, Samarth Chugh
-Maintainer: Shubham Maheshwari, Samarth Chugh <shubham14101@iiitd.ac.in, c.samarth98@gmail.com>
+Maintainer: Shubham Maheshwari <shubham14101@iiitd.ac.in>
 Contact: Tavpritesh Sethi <tavpriteshsethi@iiitd.ac.in>
 Description: An R package
 biocViews:
